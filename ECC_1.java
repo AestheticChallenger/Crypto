@@ -1,26 +1,30 @@
 
 import java.util.Scanner;
 
-
-public class ECC {
-    static Scanner input = new Scanner(System.in);    
+public class ECC_1 {
+    static Scanner input = new Scanner(System.in);
+    static int a;
+    static int b;
+    static int p;
+    static int x;
+    static int y;
 
     public static void main(String[] args) {
         System.out.print("Enter the following values"
-        + "Enter 'a' value: ");
-        int a = input.nextInt();
-        
+                + "Enter 'a' value: ");
+        a = input.nextInt();
+
         System.out.print("Enter 'b' value: ");
-        int b = input.nextInt();
+        b = input.nextInt();
 
         System.out.print("Enter 'p' value: ");
-        int p = input.nextInt();
+        p = input.nextInt();
 
         System.out.print("Enter 'x' value: ");
-        int x = input.nextInt();
+        x = input.nextInt();
 
         System.out.print("Enter 'y' value: ");
-        int y = input.nextInt();
+        y = input.nextInt();
 
         System.out.print("Enter the scalar value / the number of repetition: ");
         int n = input.nextInt();
@@ -34,7 +38,7 @@ public class ECC {
             i = getModInverse(Math.abs(x), p) + p;
             return i;
         }
-   
+
         for (i = 0; i < p; i++) {
             if ((x * i) % p == 1) {
                 return i;
@@ -63,12 +67,11 @@ public class ECC {
                 numerator = (y2 - y1);
                 denominator = (x2 - x1);
             }
-            
+
             if (numerator < 0 && denominator < 0) {
                 numerator = numerator * -1;
                 denominator = denominator * -1;
             }
-            
 
             int denominatorInv = getModInverse(denominator, p);
             if (denominatorInv == -1) {
@@ -78,12 +81,11 @@ public class ECC {
 
             s = (numerator * denominatorInv) % p;
 
-     
-            int x3 = ((s * s) - x1 - x2 ) % p;
+            int x3 = ((s * s) - x1 - x2) % p;
             if (x3 < 0)
                 x3 += p;
 
-            int y3 = ((s * (x1 - x3)) - y1 ) % p;
+            int y3 = ((s * (x1 - x3)) - y1) % p;
             if (y3 < 0)
                 y3 += p;
 
@@ -92,7 +94,10 @@ public class ECC {
             // Updates tthe x, and y
             x2 = x3;
             y2 = y3;
+
+            // if (n % 2)
         }
+
+        getAllPoints(n, a, b, p, x2, y2);
     }
 }
-    
