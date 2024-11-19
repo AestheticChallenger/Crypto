@@ -427,25 +427,19 @@ public class Main {
 
         System.out.println("Enter key: ");
         int key = input.nextInt();
+        getSubKeys(key);
 
         String encryptedString = "";
         int blockIndex = 0;
 
         // the main rounds... if plaintext = 16, then i = 8; ->> block max is 0 -> 7
         while (blockIndex < binaryMessage.length() / 16) {
-            encryptedString = encryptEachBlock(Integer.parseInt(binaryMessage.substring(blockIndex * 16, (blockIndex + 1) * 16), 2));
+            encryptedString += encryptEachBlock(Integer.parseInt(binaryMessage.substring(blockIndex * 16, (blockIndex + 1) * 16), 2));
+            blockIndex++;
         }
+
         System.out.println("Message: " + message);
         System.out.println("Encrypted message: " + encryptedString);
-
-    }
-
-    private static String padMessage(String message) {
-        int remainingbits = message.length() % 16;
-        for (int i = remainingbits; i < 16; i++) {
-            message += 0;
-        }
-        return message;
 
     }
 
@@ -455,7 +449,7 @@ public class Main {
         int selected1stBoxIndex = selectedSubkey % 10;
         System.out.print("selectected 1 & 2 = " + selected1stBoxIndex);
 
-        String reversedKey = new StringBuilder(Integer.toBinaryString(selectedSubkey)).reverse().toString();
+        String reversedKey = new StringBuilder(padMessage(Integer.toBinaryString(selectedSubkey))).reverse().toString();
         int selected2ndBoxIndex = Integer.parseInt(reversedKey, 2) % 10;
         System.out.println(" & " + selected2ndBoxIndex);
         String[][][] keyList = {totalSBox[selected1stBoxIndex], totalSBox[selected2ndBoxIndex]};
@@ -467,7 +461,7 @@ public class Main {
         String messageString = "";
         int round = 0; // 0, 1, 2, 3
         while (round < 4) {
-            messageString = Integer.toBinaryString(sixteenBits);
+            messageString = padMessage(Integer.toBinaryString(sixteenBits));
             String[][][] SboxList = getSBox(round); // has the selected s boxs
             String sBoxedString = substitute(messageString.substring(0, 8), SboxList[0])
                     + substitute(messageString.substring(8, 16), SboxList[1]);
@@ -475,7 +469,7 @@ public class Main {
 
             int result = Integer.parseInt(permutedMessage, 2) ^ Integer.parseInt(subkeys[round], 2);
             // XOR with the sub key here
-            messageString = Integer.toBinaryString(result);
+            messageString = padMessage(Integer.toBinaryString(result));
             round++;
 
         }
@@ -503,7 +497,7 @@ public class Main {
                 break;
         }
 
-        StringBuilder shuffled = new StringBuilder(sBoxedString);
+        StringBuilder shuffled = new StringBuilder("0000000000000000");
         for (int index = 0; index < permutation.size(); index++) {
             shuffled.setCharAt(permutation.get(index) - 1, sBoxedString.charAt(index));
 
@@ -520,28 +514,71 @@ public class Main {
     }
 
     public static void getSubKeys(int masterKey) {
-        String masterKey_inString = Integer.toBinaryString(masterKey);
+        String masterKey_inString = padMessage(Integer.toBinaryString(masterKey));
 
-        String w0 = masterKey_inString.substring(0, 4);
-        String w1 = masterKey_inString.substring(4, 8);
-        String w2 = masterKey_inString.substring(8, 12);
-        String w3 = masterKey_inString.substring(12, 16);
-
-        int[] sbox = {};
-
-        // kHigh -> 
-        String keyHigh = masterKey_inString.substring(8, 16);
-
-        // kLow -> 
-        String keyLow = masterKey_inString.substring(0, 8);
-
-        // circular shift
-        // String shiftedMasterKey = ;
-        // s box
-        // add round key
         for (int round = 0; round < 4; round++) {
-            // subKeys[round] = 0b00;
+            String w0 = masterKey_inString.substring(0, 4);
+            String w1 = masterKey_inString.substring(4, 8);
+            String w2 = masterKey_inString.substring(8, 12);
+            String w3 = masterKey_inString.substring(12, 16);
+
+            // w3 + w0 = w4 
+            // circular shift
+            String leftShiftedW3 = w3.substring(1, 4) + w3.charAt(0);
+
+            // s box
+            int[][] sbox = {{0, 1, 2, 3},
+            {4, 5, 6, 7},
+            {8, 9, 10, 11},
+            {12, 13, 14, 15}};
+
+            int rowIndex = Integer.parseInt(leftShiftedW3.substring(0, 2), 2);
+            int columnIndex = Integer.parseInt(leftShiftedW3.substring(2, 4), 2);
+            String substitutedW3 = pad4Bits(Integer.toBinaryString(sbox[rowIndex][columnIndex]));
+
+            // add round key
+            String g_W3 = pad4Bits(Integer.toBinaryString(Integer.parseInt(w3, 2) ^ Integer.parseInt("1", 2)));
+
+            String w4 = pad4Bits(Integer.toBinaryString(Integer.parseInt(g_W3) ^ Integer.parseInt(w0)));
+            String w5 = pad4Bits(Integer.toBinaryString(Integer.parseInt(w4) ^ Integer.parseInt(w1)));
+            String w6 = pad4Bits(Integer.toBinaryString(Integer.parseInt(w5) ^ Integer.parseInt(w2)));
+            String w7 = pad4Bits(Integer.toBinaryString(Integer.parseInt(w6) ^ Integer.parseInt(w3)));
+
+            // the subkey
+            masterKey_inString = w4 + w5 + w6 + w7;
+            subkeys[round] = masterKey_inString;
+
         }
 
     }
+
+    private static String padMessage(String message) {
+        int excessBits = message.length() % 16;
+        if (excessBits == 0 && message.length() > 0) {
+            return message;
+        }
+
+        for (int i = excessBits; i < 16; i++) {
+            message += "0";
+        }
+        return message;
+
+    }
+
+    private static String pad4Bits(String message) {
+        int excessBits = message.length() % 4;
+        if (excessBits == 0 && message.length() > 0) {
+            return message;
+        }
+
+        String paddedMessage = "";
+
+        for (int i = 0; i < 4 - excessBits; i++) {
+            paddedMessage += "0";
+        }
+
+        return paddedMessage + message;
+
+    }
+
 }
